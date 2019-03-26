@@ -1,8 +1,21 @@
 const express = require('express')
 const app = express()
 const multer = require('multer')
+
+/**
+ * 文件上传过滤
+ */
+
+const fileFilter = (req, file, callback) => {
+  if (!file.originalname.match(/\.(jpg|jpeg|png|gif)$/)) {
+    return callback(new Error('images only :)'), false)
+  }
+  callback(null, true)
+}
+
 const upload = multer({
-  dest: 'uploads/'
+  dest: 'uploads/',
+  fileFilter
 })
 
 /**
@@ -20,6 +33,15 @@ app.post('/profile', upload.single('avatar'), (req, res, next) => {
 
 app.post('/photos/upload', upload.array('photos', 3), (req, res, next) => {
   res.send(req.files)
+})
+
+/**
+ * 错误处理
+ */
+app.use((error, req, res, next) => {
+  res.status(500).send({
+    message: error.message
+  })
 })
 
 app.listen(3000, () => {
