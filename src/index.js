@@ -1,4 +1,5 @@
 const express = require('express')
+const fs = require('fs')
 const app = express()
 const multer = require('multer')
 const loki = require('lokijs')
@@ -51,8 +52,21 @@ app.post('/profile', upload.single('avatar'), async (req, res, next) => {
  * 指定最多上传3个
  */
 
-app.post('/photos/upload', upload.array('photos', 3), (req, res, next) => {
-  res.send(req.files)
+app.post('/photos/upload', upload.array('photos', 3), async (req, res, next) => {
+  const collection = await loadCollection('uploads', db)
+  const result = collection.insert(req.files)
+  db.saveDatabase()
+  res.send(result)
+})
+
+/**
+ * 获取上传资源
+ */
+app.get('/uploads/:id', async (req, res) => {
+  const collection = await loadCollection('uploads', db)
+  const result = collection.get(req.params.id)
+  res.setHeader('Content-Type', result.mimetype)
+  fs.createReadStream(result.path).pipe(res)
 })
 
 /**
