@@ -1,6 +1,23 @@
 const express = require('express')
 const app = express()
 const multer = require('multer')
+const loki = require('lokijs')
+
+/**
+ * 数据库名字为uploads/uploads.json
+ */
+const db = new loki('uploads/uploads.json', {
+  persistenceMethod: 'fs'
+})
+
+const loadCollection = (collectionName, db) => {
+  return new Promise(resolve => {
+    db.loadDatabase({}, () => {
+      const collection = db.getCollection(collectionName) || db.addCollection(collectionName)
+      resolve(collection)
+    })
+  })
+}
 
 /**
  * 文件上传过滤
@@ -22,8 +39,11 @@ const upload = multer({
  * 处理单个文件上传
  * avatar:上传表单中对应的文件名称
  */
-app.post('/profile', upload.single('avatar'), (req, res, next) => {
-  res.send(req.file)
+app.post('/profile', upload.single('avatar'), async (req, res, next) => {
+  const collection = await loadCollection('uploads', db)
+  const result = collection.insert(req.file)
+  db.saveDatabase()
+  res.send(result)
 })
 
 /**
